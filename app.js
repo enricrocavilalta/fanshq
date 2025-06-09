@@ -5,35 +5,40 @@ const bikesRouter = require('./routes/bikes'); // Importa las rutas de bikes
 const toursRouter = require('./routes/tours'); // Importa las rutas de tours
 const app = express();
 const path = require('path');
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.urlencoded({ extended: true }));
-// Middleware para parsear el cuerpo de las peticiones como JSON
-app.use(bodyParser.json());
-app.use(express.json());
+
+// Configure MySQL session store
+/*
+const sessionStore = new MySQLStore({
+  host: 'localhost',
+  user: 'root', // Usuario de MySQL
+  password: 'fghjFGHJ85', // Contraseña de MySQL
+  database: 'happyrental' // Nombre de la base de datos
+});
+*/
+
 //pp.use(session({ ... }));
-const session = require('express-session');
+//const session = require('express-session');
 const bcrypt = require('bcrypt');
+//const posts = require('./routes/posts');
+//app.use(cors());
+const port = 3000;
+//app.use('/api/posts', posts);
+
+// Configurar el motor de plantillas EJS
+app.set('view engine', 'ejs');
 
 const mysql = require('mysql2/promise'); // For database connections
 
-app.use(session({
-  secret: 'your-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // true if using HTTPS
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 // 1 day
-  }
-}));
+
 
 const dbOptions = {
   host: 'localhost',
   user: 'root',
   password: 'fghjFGHJ85',
-  database: 'happyrental'
+  database: 'fanshq'
 };
 
+/*
 app.get('/profile', authMiddleware, async (req, res) => {
   const conn = await mysql.createConnection(dbOptions);
   const [rows] = await conn.execute('SELECT id, username FROM users WHERE id = ?', [req.session.userId]);
@@ -43,16 +48,11 @@ app.get('/profile', authMiddleware, async (req, res) => {
 
   res.send(rows[0]);
 });
+*/
 
-// Usamos la ruta de las bicicletas
-app.use('/bikes', bikesRouter);
-// Usamos la ruta de los tours
-app.use('/tours', toursRouter);
+
 
 app.use(express.static('public'));
-
-// Set EJS as the view engine
-app.set('view engine', 'ejs');
 
 app.post('/send-email', (req, res) => {
   const { name, email, message } = req.body;
@@ -61,13 +61,17 @@ console.log(name);
 console.log(email);
 console.log(message);
   // configure transport (use your actual email credentials or SMTP service)
-  const transporter = nodemailer.createTransport({
-    service: 'happyrentalbike',
+  
+  /*const transporter = nodemailer.createTransport({
+    service: 'gmail',
     auth: {
       user: 'tienda@happyrentalbike.com',
       pass: ''
     }
   });
+*/
+
+app.get('/favicon.ico', (req, res) => res.status(204));
 
   const mailOptions = {
     from: req.body.contact_email,
@@ -87,6 +91,42 @@ console.log(message);
   });
 });
 
+/*
+app.post('/posts', (req, res) => {
+  console.log(req.body); // Debug
+  res.status(201).send({ message: 'Post created' });
+});
+*/
+
+
+
+
+//MIDDLEWARES
+app.use(express.urlencoded({ extended: true }));
+// Middleware para parsear el cuerpo de las peticiones como JSON
+app.use(express.json());
+// Serve static files (like CSS, JS, images)
+app.use(express.static(path.join(__dirname, 'public')));
+// Plug session middleware into Express
+/*app.use(session({
+  secret: 'yourSecretKey', // Use a strong, random string in production
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false
+}));*/
+
+
+//ROUTES
+// Usamos la ruta de las bicicletas
+app.use('/bikes', bikesRouter);
+// Usamos la ruta de los tours
+app.use('/tours', toursRouter);
+// Montar el router en /posts
+const postsRouter = require('./routes/posts');
+app.use('/posts', postsRouter);
+
+
+
 // Arrancar el servidor
 const PORT = 3000;
 app.listen(PORT, () => {
@@ -96,8 +136,7 @@ app.listen(PORT, () => {
 // Set the views folder where EJS templates are located
 app.set('views', path.join(__dirname, 'views'));
 
-// Serve static files (like CSS, JS, images)
-app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Route to render the homepage
 app.get('/', (req, res) => {
@@ -116,23 +155,11 @@ app.get('/:page', (req, res) => {
   });
 });
 
-const MySQLStore = require('express-mysql-session')(session);
+//const MySQLStore = require('express-mysql-session')(session);
 
-// Configure MySQL session store
-const sessionStore = new MySQLStore({
-  host: 'localhost',
-  user: 'root', // Usuario de MySQL
-  password: 'fghjFGHJ85', // Contraseña de MySQL
-  database: 'happyrental' // Nombre de la base de datos
-});
 
-// Plug session middleware into Express
-app.use(session({
-  secret: 'yourSecretKey', // Use a strong, random string in production
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false
-}));
+
+
 
 
 // Register
@@ -182,13 +209,15 @@ app.post('/logout', (req, res) => {
   req.session.destroy(() => res.send({ message: 'Logged out' }));
 });
 
+/*
 function authMiddleware(req, res, next) {
   if (!req.session.userId) return res.status(401).send({ error: 'Unauthorized' });
   next();
 }
+*/
 
 app.post('/cart', async (req, res) => {
-  const userId = req.session.userId;
+  const userId = 1;//req.session.userId;
   const bike_id = req.body.bike_id;
   const quantity = req.body.quantity ?? 1;
   const price = req.body.price;
@@ -242,6 +271,8 @@ app.get('/cart', async (req, res) => {
 app.get('/session-test', (req, res) => {
   res.json({ session: req.session });
 });
+
+
 
 
 
